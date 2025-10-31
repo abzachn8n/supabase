@@ -86,7 +86,7 @@ export const SQLEditorNav = ({ sort = 'inserted_at' }: SQLEditorNavProps) => {
     data: privateSnippetsPages,
     isSuccess,
     isLoading,
-    isPreviousData,
+    isPlaceholderData,
     isFetching,
     hasNextPage,
     fetchNextPage,
@@ -123,7 +123,7 @@ export const SQLEditorNav = ({ sort = 'inserted_at' }: SQLEditorNavProps) => {
       },
       {
         snippets: rootSnippets,
-        isLoading: isLoading || (isPreviousData && isFetching),
+        isLoading: isLoading || (isPlaceholderData && isFetching),
         snippetIds: new Set<string>(rootSnippets.map((snippet) => snippet.id)),
       }
     )
@@ -134,7 +134,7 @@ export const SQLEditorNav = ({ sort = 'inserted_at' }: SQLEditorNavProps) => {
     }
 
     return snippetInfo
-  }, [privateSnippetsPages?.pages, subResults, isLoading, isPreviousData, isFetching, snippet])
+  }, [privateSnippetsPages?.pages, subResults, isLoading, isPlaceholderData, isFetching, snippet])
 
   const privateSnippets = useMemo(
     () =>

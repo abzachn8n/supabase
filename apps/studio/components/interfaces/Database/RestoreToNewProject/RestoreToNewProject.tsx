@@ -75,20 +75,26 @@ export const RestoreToNewProject = () => {
     data: cloneStatus,
     refetch: refetchCloneStatus,
     isLoading: cloneStatusLoading,
+    isSuccess: isCloneStatusSuccess,
   } = useCloneStatusQuery(
     {
       projectRef: project?.ref,
     },
     {
-      refetchInterval,
-      refetchOnWindowFocus: false,
-      onSuccess: (data) => {
-        const hasTransientState = data?.clones.some((c) => c.status === 'IN_PROGRESS')
-        if (!hasTransientState) setRefetchInterval(false)
+      refetchInterval: (query) => {
+        const data = query.state.data
+        if (!data) return false
+        const hasTransientState = data.clones.some((c) => c.status === 'IN_PROGRESS')
+        if (!hasTransientState) {
+          return false
+        }
+        return 5000
       },
+      refetchOnWindowFocus: false,
       enabled: PHYSICAL_BACKUPS_ENABLED || PITR_ENABLED,
     }
   )
+
   const IS_CLONED_PROJECT = cloneStatus?.cloned_from?.source_project?.ref ? true : false
   const isLoading = !isPermissionsLoaded || cloneBackupsLoading || cloneStatusLoading
 

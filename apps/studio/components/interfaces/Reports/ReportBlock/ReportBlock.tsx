@@ -1,5 +1,5 @@
 import { X } from 'lucide-react'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
 import { useParams } from 'common'
@@ -60,13 +60,9 @@ export const ReportBlock = ({
         if (failureCount >= 2) return false
         return true
       },
-      onSuccess: (contentData) => {
-        if (!isSnippet) return
-        const fetchedSql = (contentData?.content as SqlSnippets.Content | undefined)?.sql
-        if (fetchedSql) runQuery('select', fetchedSql)
-      },
     }
   )
+
   const sql = isSnippet ? (data?.content as SqlSnippets.Content)?.sql : undefined
   const chartConfig = { ...DEFAULT_CHART_CONFIG, ...(item.chartConfig ?? {}) }
   const isDeprecatedChart = DEPRECATED_REPORTS.includes(item.attribute)
@@ -82,7 +78,7 @@ export const ReportBlock = ({
   const {
     mutate: executeSql,
     error: executeSqlError,
-    isLoading: executeSqlLoading,
+    isPending: executeSqlLoading,
   } = useExecuteSqlMutation({
     onError: () => {
       // Silence the error toast because the error will be displayed inline
@@ -130,6 +126,15 @@ export const ReportBlock = ({
     },
     [projectRef, readOnlyConnectionString, postgresConnectionString, executeSql]
   )
+
+  useEffect(() => {
+    if (data) {
+      const fetchedSql = (data?.content as SqlSnippets.Content | undefined)?.sql
+      if (fetchedSql) {
+        runQuery('select', fetchedSql)
+      }
+    }
+  }, [data, runQuery])
 
   const sqlHasChanged = useChangedSync(sql)
   const isRefreshingChanged = useChangedSync(isRefreshing)

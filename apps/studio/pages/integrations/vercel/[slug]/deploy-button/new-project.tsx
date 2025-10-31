@@ -1,5 +1,5 @@
 import { useParams } from 'common'
-import { ChangeEvent, useState } from 'react'
+import { ChangeEvent, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Alert, Button, Checkbox, Input, Listbox } from 'ui'
 
@@ -152,54 +152,65 @@ const CreateProject = () => {
   }
 
   // Wait for the new project to be created before creating the connection
-  useProjectSettingsV2Query(
+  const { data } = useProjectSettingsV2Query(
     { projectRef: newProjectRef },
     {
       enabled: newProjectRef !== undefined,
       // refetch until the project is created
-      refetchInterval: (data) => {
+      refetchInterval: (query) => {
+        const data = query.state.data
         return ((data?.service_api_keys ?? []).length ?? 0) > 0 ? false : 1000
       },
-      async onSuccess(data) {
-        const isReady = (data?.service_api_keys ?? []).length > 0
+    }
+  )
 
-        if (!isReady || !organizationIntegration || !foreignProjectId || !newProjectRef) {
-          return
-        }
+  useEffect(() => {
+    const isReady = (data?.service_api_keys ?? []).length > 0
 
-        const projectDetails = vercelProjects?.find((x: any) => x.id === foreignProjectId)
+    if (!isReady || !organizationIntegration || !foreignProjectId || !newProjectRef) {
+      return
+    }
 
-        try {
-          const { id: connectionId } = await createConnections({
-            organizationIntegrationId: organizationIntegration?.id,
-            connection: {
-              foreign_project_id: foreignProjectId,
-              supabase_project_ref: newProjectRef,
-              integration_id: '0',
-              metadata: {
-                ...projectDetails,
-                supabaseConfig: {
-                  projectEnvVars: {
-                    write: true,
-                  },
-                },
-              },
+    const projectDetails = vercelProjects?.find((x: any) => x.id === foreignProjectId)
+
+    createConnections({
+      organizationIntegrationId: organizationIntegration?.id,
+      connection: {
+        foreign_project_id: foreignProjectId,
+        supabase_project_ref: newProjectRef,
+        integration_id: '0',
+        metadata: {
+          ...projectDetails,
+          supabaseConfig: {
+            projectEnvVars: {
+              write: true,
             },
-            orgSlug: selectedOrganization?.slug,
-          })
-        } catch (error) {
-          console.error('An error occurred during createConnections:', error)
-          return
-        }
-
+          },
+        },
+      },
+      orgSlug: selectedOrganization?.slug,
+    })
+      .then(() => {
         snapshot.setLoading(false)
 
         if (next && isVercelUrl(next)) {
           window.location.href = next
         }
-      },
-    }
-  )
+      })
+      .catch((error) => {
+        console.error('An error occurred during createConnections:', error)
+      })
+  }, [
+    data,
+    newProjectRef,
+    organizationIntegration,
+    foreignProjectId,
+    vercelProjects,
+    selectedOrganization,
+    createConnections,
+    snapshot,
+    next,
+  ])
 
   return (
     <div>

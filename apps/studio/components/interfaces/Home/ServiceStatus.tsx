@@ -97,7 +97,8 @@ export const ServiceStatus = () => {
     { projectRef: isBranch ? project?.parentRef : undefined },
     {
       enabled: isBranch,
-      refetchInterval: (data) => {
+      refetchInterval: (query) => {
+        const data = query.state.data
         if (!data) return false
         const currentBranch = data.find((branch) => branch.project_ref === ref)
         return ['FUNCTIONS_DEPLOYED', 'MIGRATIONS_FAILED', 'FUNCTIONS_FAILED'].includes(
@@ -123,7 +124,10 @@ export const ServiceStatus = () => {
       projectRef: ref,
     },
     {
-      refetchInterval: (data) => (data?.some((service) => !service.healthy) ? 5000 : false),
+      refetchInterval: (query) => {
+        const data = query.state.data
+        return data?.some((service) => !service.healthy) ? 5000 : false
+      },
     }
   )
   const { data: edgeFunctionsStatus, refetch: refetchEdgeFunctionServiceStatus } =
@@ -132,7 +136,10 @@ export const ServiceStatus = () => {
         projectRef: ref,
       },
       {
-        refetchInterval: (data) => (!data?.healthy ? 5000 : false),
+        refetchInterval: (query) => {
+          const data = query.state.data
+          return !data?.healthy ? 5000 : false
+        },
       }
     )
 

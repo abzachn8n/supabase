@@ -39,7 +39,8 @@ export const CustomDomainConfig = () => {
   } = useCustomDomainsQuery(
     { projectRef: ref },
     {
-      refetchInterval(data) {
+      refetchInterval: (query) => {
+        const data = query.state.data
         // while setting up the ssl certificate, we want to poll every 5 seconds
         if (data?.customDomain?.ssl.status) {
           return 5000
@@ -138,7 +139,7 @@ export const CustomDomainConfig = () => {
 }
 
 interface CustomDomainConfigFallthroughProps {
-  fetchStatus: 'error' | 'success' | 'loading'
+  fetchStatus: 'error' | 'success' | 'pending'
   data: CustomDomainsData | undefined
 }
 

@@ -128,10 +128,11 @@ const DeployNewReplicaPanel = ({
   useProjectDetailQuery(
     { ref: projectRef },
     {
-      refetchInterval,
       refetchOnWindowFocus: false,
-      onSuccess: (data) => {
-        if (data.is_physical_backups_enabled) setRefetchInterval(false)
+      refetchInterval: (query) => {
+        if (query.state.data?.is_physical_backups_enabled) {
+          return false
+        }
       },
     }
   )

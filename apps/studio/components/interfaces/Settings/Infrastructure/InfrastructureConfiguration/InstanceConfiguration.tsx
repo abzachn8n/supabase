@@ -92,42 +92,43 @@ const InstanceConfigurationUI = ({ diagramOnly = false }: InstanceConfigurationU
     [data, projectRef]
   )
 
-  useReadReplicasStatusesQuery(
+  const { data: replicasStatuses } = useReadReplicasStatusesQuery(
     { projectRef },
     {
       refetchInterval: refetchInterval as any,
       refetchOnWindowFocus: false,
-      onSuccess: async (res) => {
-        const fixedStatues = [
-          REPLICA_STATUS.ACTIVE_HEALTHY,
-          REPLICA_STATUS.ACTIVE_UNHEALTHY,
-          REPLICA_STATUS.INIT_READ_REPLICA_FAILED,
-        ]
-        const replicasInTransition = res.filter((db) => {
-          const { status } = db.replicaInitializationStatus || {}
-          return (
-            !fixedStatues.includes(db.status) || status === ReplicaInitializationStatus.InProgress
-          )
-        })
-        const hasTransientStatus = replicasInTransition.length > 0
-
-        // If any replica's status has changed, refetch databases
-        if (
-          numTransition.current !== replicasInTransition.length ||
-          res.length !== (data ?? []).length
-        ) {
-          numTransition.current = replicasInTransition.length
-          await refetchReplicas()
-          setTimeout(() => refetchLoadBalancers(), 2000)
-        }
-
-        // If all replicas are active healthy, stop fetching statuses
-        if (!hasTransientStatus) {
-          setRefetchInterval(false)
-        }
-      },
     }
   )
+
+  useEffect(() => {
+    const fixedStatues = [
+      REPLICA_STATUS.ACTIVE_HEALTHY,
+      REPLICA_STATUS.ACTIVE_UNHEALTHY,
+      REPLICA_STATUS.INIT_READ_REPLICA_FAILED,
+    ]
+    const replicasInTransition =
+      replicasStatuses?.filter((db) => {
+        const { status } = db.replicaInitializationStatus || {}
+        return (
+          !fixedStatues.includes(db.status) || status === ReplicaInitializationStatus.InProgress
+        )
+      }) ?? []
+    const hasTransientStatus = replicasInTransition.length > 0
+
+    // If any replica's status has changed, refetch databases
+    if (
+      numTransition.current !== replicasInTransition.length ||
+      replicasStatuses?.length !== (data ?? []).length
+    ) {
+      numTransition.current = replicasInTransition.length
+      refetchReplicas().then(() => setTimeout(() => refetchLoadBalancers(), 2000))
+    }
+
+    // If all replicas are active healthy, stop fetching statuses
+    if (!hasTransientStatus) {
+      setRefetchInterval(false)
+    }
+  }, [isSuccessReplicas])
 
   const backgroundPatternColor =
     resolvedTheme === 'dark' ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.4)'

@@ -68,6 +68,7 @@ export const TriggersList = ({
     error,
     isLoading,
     isError,
+    isSuccess,
   } = useDatabaseTriggersQuery({
     projectRef: project?.ref,
     connectionString: project?.connectionString,
@@ -82,7 +83,7 @@ export const TriggersList = ({
     return <GenericSkeletonLoader />
   }
 
-  if (isError) {
+  if (isError || !isSuccess) {
     return <AlertError error={error} subject="Failed to retrieve database triggers" />
   }
 
