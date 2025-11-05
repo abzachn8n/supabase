@@ -486,7 +486,6 @@ services:
     image: supabase/supavisor:2.7.3
     restart: unless-stopped
     ports:
-      - ${POSTGRES_PORT}:5432
       - ${POOLER_PROXY_PORT_TRANSACTION}:6543
     volumes:
       - ./volumes/pooler/pooler.exs:/etc/pooler/pooler.exs:ro,z
@@ -504,6 +503,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      # Give the pooler extra time to run migrations and start
+      start_period: 120s
     depends_on:
       db:
         condition: service_healthy
@@ -531,7 +532,7 @@ services:
       [
         "/bin/sh",
         "-c",
-        "/app/bin/migrate && /app/bin/supavisor eval \"$$(cat /etc/pooler/pooler.exs)\" && /app/bin/server"
+        "/app/bin/migrate && tr -d '\\r' < /etc/pooler/pooler.exs > /tmp/pooler.exs && echo '---- processed pooler.exs (head) ----' && sed -n '1,120p' /tmp/pooler.exs && echo '---- end processed pooler.exs ----' && /app/bin/supavisor eval \"$$(cat /tmp/pooler.exs)\" && /app/bin/server"
       ]
 
 volumes:
